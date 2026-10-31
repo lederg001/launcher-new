@@ -125,3 +125,117 @@ public class MinecraftLaunchBuilderTests
         return root;
     }
 }
+
+
+public class MinecraftLibraryInstallerTests
+{
+    [Fact]
+    public void ResolvesPatchyFromOfficialMojangHttpsRepositoryInsteadOfTLauncherMirror()
+    {
+        var uri = MinecraftLibraryInstaller.ResolveDownloadUri(
+            "com.mojang:patchy:1.3.9",
+            "com/mojang/patchy/1.3.9/patchy-1.3.9.jar",
+            "http://res.tlauncher.org/unb/libraries/com/mojang/patchy/1.3.9/patchy-1.3.9.jar");
+
+        Assert.Equal("https", uri.Scheme);
+        Assert.Equal("libraries.minecraft.net", uri.Host);
+        Assert.Equal("/com/mojang/patchy/1.3.9/patchy-1.3.9.jar", uri.AbsolutePath);
+    }
+
+    [Fact]
+    public void ResolvesForgeArtifactFromOfficialForgeMaven()
+    {
+        var uri = MinecraftLibraryInstaller.ResolveDownloadUri(
+            "net.minecraftforge:forge:1.12.2-14.23.5.2861",
+            "net/minecraftforge/forge/1.12.2-14.23.5.2861/forge-1.12.2-14.23.5.2861.jar",
+            "http://res.tlauncher.org/unb/libraries/net/minecraftforge/forge/1.12.2-14.23.5.2861/forge-1.12.2-14.23.5.2861.jar");
+
+        Assert.Equal("https", uri.Scheme);
+        Assert.Equal("maven.minecraftforge.net", uri.Host);
+    }
+
+    [Fact]
+    public async Task DownloadsMissingLibraryAndVerifiesSha1BeforeWritingIt()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "LEDERG-library-test-" + Guid.NewGuid().ToString("N"));
+        var bytes = System.Text.Encoding.UTF8.GetBytes("official patchy fixture");
+        var sha1 = Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(bytes)).ToLowerInvariant();
+        var manifestDirectory = Path.Combine(root, "versions", "Forge 1.12.2");
+        Directory.CreateDirectory(manifestDirectory);
+        var manifest = $$"""
+        {
+          "libraries": [
+            {
+              "name": "com.mojang:patchy:1.3.9",
+              "artifact": {
+                "path": "libraries/com/mojang/patchy/1.3.9/patchy-1.3.9.jar",
+                "sha1": "{{sha1}}",
+                "url": "http://res.tlauncher.org/unb/libraries/com/mojang/patchy/1.3.9/patchy-1.3.9.jar"
+              }
+            }
+          ]
+        }
+        """;
+        File.WriteAllText(Path.Combine(manifestDirectory, "Forge 1.12.2.json"), manifest);
+
+        Uri? requested = null;
+        using var http = new HttpClient(new FakeHandler(request =>
+        {
+            requested = request.RequestUri;
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+            {
+                Content = new ByteArrayContent(bytes)
+            };
+        }));
+
+        try
+        {
+            var repaired = await MinecraftLibraryInstaller.EnsureLibrariesAsync(root, http);
+            var downloaded = Path.Combine(root, "libraries", "com", "mojang", "patchy", "1.3.9", "patchy-1.3.9.jar");
+            Assert.Equal(1, repaired);
+            Assert.NotNull(requested);
+            Assert.Equal("libraries.minecraft.net", requested!.Host);
+            Assert.True(File.Exists(downloaded));
+            Assert.Equal(sha1, Convert.ToHexString(System.Security.Cryptography.SHA1.HashData(File.ReadAllBytes(downloaded))).ToLowerInvariant());
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    [Fact]
+    public async Task RejectsLibraryDownloadWhenSha1DoesNotMatch()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "LEDERG-library-test-" + Guid.NewGuid().ToString("N"));
+        var manifestDirectory = Path.Combine(root, "versions", "Forge 1.12.2");
+        Directory.CreateDirectory(manifestDirectory);
+        File.WriteAllText(Path.Combine(manifestDirectory, "Forge 1.12.2.json"), """
+        {
+          "libraries": [
+            {
+              "name": "com.mojang:patchy:1.3.9",
+              "artifact": {
+                "path": "libraries/com/mojang/patchy/1.3.9/patchy-1.3.9.jar",
+                "sha1": "0000000000000000000000000000000000000000",
+                "url": "https://libraries.minecraft.net/com/mojang/patchy/1.3.9/patchy-1.3.9.jar"
+              }
+            }
+          ]
+        }
+        """);
+        using var http = new HttpClient(new FakeHandler(_ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(System.Text.Encoding.UTF8.GetBytes("tampered"))
+        }));
+        try
+        {
+            await Assert.ThrowsAsync<InvalidDataException>(() => MinecraftLibraryInstaller.EnsureLibrariesAsync(root, http));
+            Assert.False(File.Exists(Path.Combine(root, "libraries", "com", "mojang", "patchy", "1.3.9", "patchy-1.3.9.jar")));
+        }
+        finally { if (Directory.Exists(root)) Directory.Delete(root, true); }
+    }
+
+    private sealed class FakeHandler(Func<HttpRequestMessage, HttpResponseMessage> responseFactory) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+            => Task.FromResult(responseFactory(request));
+    }
+}
