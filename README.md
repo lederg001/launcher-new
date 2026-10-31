@@ -7,7 +7,7 @@ Windows x64 standalone launcher and installer for LEDERG STALMINE (Minecraft Jav
 - Downloads the LEDERG client ZIP from Google Drive.
 - Verifies the archive SHA-256 before extracting it.
 - Backs up existing game folders before updating the client.
-- Launches Forge 1.12.2 directly using the bundled Java 8 runtime and the local Forge libraries.
+- Launches Forge 1.12.2 directly using the bundled Java 8 runtime and the local Forge libraries. Missing or damaged libraries are downloaded from official HTTPS Maven repositories and checked against their SHA-1 hashes.
 - Does not open TLauncher or the official Minecraft Launcher.
 
 ## Account mode
