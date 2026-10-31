@@ -155,6 +155,8 @@ public sealed class MainForm : Form
             }
 
             ClientInstaller.ExtractSafely(temp, game);
+            await MinecraftLibraryInstaller.EnsureLibrariesAsync(game, http,
+                new Progress<string>(message => status.Text = message));
             status.Text = "Установка завершена. Укажи ник и нажми «Запустить Forge 1.12.2».";
             progress.Value = 100;
             MessageBox.Show(this,
