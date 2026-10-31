@@ -41,7 +41,7 @@ public sealed class MainForm : Form
         install.Click += async (_, _) => await InstallClientAsync();
         play.Click += (_, _) => OpenMinecraftLauncher();
         Controls.AddRange([brand, subtitle, folderLabel, folder, browse, status, progress, install, play]);
-        Load += (_, _) => ReadConfig();
+        Load += (_, _) => LoadConfig();
     }
 
     private static void StyleButton(Button button, bool primary)
