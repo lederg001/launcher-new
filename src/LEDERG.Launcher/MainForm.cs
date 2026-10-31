@@ -41,7 +41,7 @@ public sealed class MainForm : Form
         install.Click += async (_, _) => await InstallClientAsync();
         play.Click += (_, _) => OpenMinecraftLauncher();
         Controls.AddRange([brand, subtitle, folderLabel, folder, browse, status, progress, install, play]);
-        Load += (_, _) => LoadConfig();
+        Load += (_, _) => ReadConfig();
     }
 
     private static void StyleButton(Button button, bool primary)
@@ -54,7 +54,7 @@ public sealed class MainForm : Form
         button.Cursor = Cursors.Hand;
     }
 
-    private LauncherConfig? LoadConfig()
+    private LauncherConfig? ReadConfig()
     {
         try
         {
@@ -66,7 +66,7 @@ public sealed class MainForm : Form
 
     private void LoadConfig()
     {
-        var cfg = LoadConfig();
+        var cfg = ReadConfig();
         if (cfg is null || string.IsNullOrWhiteSpace(cfg.ClientZipUrl) || cfg.ClientZipUrl.Contains("PASTE_PUBLIC"))
         {
             status.Text = "Нужно настроить публичную ссылку Google Drive в launcher.json";
@@ -77,7 +77,7 @@ public sealed class MainForm : Form
 
     private async Task InstallClientAsync()
     {
-        var cfg = LoadConfig();
+        var cfg = ReadConfig();
         if (cfg is null || !Uri.TryCreate(cfg.ClientZipUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
         { MessageBox.Show(this, "Укажи публичную HTTPS-ссылку на ZIP в launcher.json.", "LEDERG", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
         install.Enabled = play.Enabled = false;
