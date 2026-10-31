@@ -1,0 +1,33 @@
+name: Build LEDERG Launcher
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Test installer core
+        run: dotnet test tests/LEDERG.Launcher.Tests/LEDERG.Launcher.Tests.csproj -c Release
+      - name: Publish Windows x64 EXE
+        run: dotnet publish src/LEDERG.Launcher/LEDERG.Launcher.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+      - name: Add launcher config
+        run: Copy-Item launcher.json publish/launcher.json
+        shell: pwsh
+      - name: Package release
+        run: Compress-Archive -Path publish/* -DestinationPath LEDERG-LAUNCHER-WIN64.zip
+        shell: pwsh
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            publish/LEDERG.Launcher.exe
+            publish/launcher.json
+            LEDERG-LAUNCHER-WIN64.zip
+          generate_release_notes: true
