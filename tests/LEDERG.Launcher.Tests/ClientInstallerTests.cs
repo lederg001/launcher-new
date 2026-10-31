@@ -1,4 +1,5 @@
 using LEDERG.Launcher.Core;
+using Xunit;
 
 namespace LEDERG.Launcher.Tests;
 
