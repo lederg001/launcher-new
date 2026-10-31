@@ -16,6 +16,10 @@ The current built-in launch mode is an **offline profile**: enter a Minecraft ni
 
 Offline mode is suitable for local play and servers configured with `online-mode=false`. Servers configured with `online-mode=true` require valid Microsoft/Minecraft account authentication; this version does not implement that authentication and will not bypass it.
 
+## Voice chat
+
+The bundled client includes Simple Voice Chat for Forge 1.12.2. The Paper server also needs the matching Bukkit plugin and a separately allocated UDP port (default `24454/UDP`). Every player using voice chat must have the client mod installed. Press `V` in-game to configure the microphone and push-to-talk key.
+
 ## Build
 
 Use the .NET 8 SDK on Windows:
