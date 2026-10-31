@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Net;
-using System.Text.Json;
 using LEDERG.Launcher.Core;
 
 namespace LEDERG.Launcher;
@@ -12,10 +11,15 @@ public sealed class MainForm : Form
     private readonly Button install = new();
     private readonly Button play = new();
     private readonly TextBox folder = new();
-    private readonly string configPath = Path.Combine(AppContext.BaseDirectory, "launcher.json");
     private readonly HttpClient http = new(new HttpClientHandler { AutomaticDecompression = DecompressionMethods.All });
 
     private sealed record LauncherConfig(string ClientZipUrl, string Sha256, string GameDirectory);
+
+    // Embedded client distribution URL: the EXE works without an adjacent config file.
+    private static readonly LauncherConfig BuiltInConfig = new(
+        "https://drive.usercontent.google.com/download?id=10YtvjYpbQ2ak5w4-FbuhpvaMgus0gJsb&export=download&confirm=t",
+        "832ca9a917dfdf86e90b2847163a803af4144c8a7f407f8b64081f59c266f5b6",
+        ".minecraft");
 
     public MainForm()
     {
@@ -54,32 +58,20 @@ public sealed class MainForm : Form
         button.Cursor = Cursors.Hand;
     }
 
-    private LauncherConfig? ReadConfig()
-    {
-        try
-        {
-            if (!File.Exists(configPath)) return null;
-            return JsonSerializer.Deserialize<LauncherConfig>(File.ReadAllText(configPath));
-        }
-        catch { return null; }
-    }
+    private static LauncherConfig ReadConfig() => BuiltInConfig;
 
     private void LoadConfig()
     {
-        var cfg = ReadConfig();
-        if (cfg is null || string.IsNullOrWhiteSpace(cfg.ClientZipUrl) || cfg.ClientZipUrl.Contains("PASTE_PUBLIC"))
-        {
-            status.Text = "Нужно настроить публичную ссылку Google Drive в launcher.json";
-            install.Enabled = false;
-        }
-        else status.Text = "Клиент готов к установке. Сначала установи сборку.";
+        status.Text = "Публичная ссылка Google Drive встроена в лаунчер. Клиент LEDERG STALMINE готов к установке.";
+        install.Enabled = true;
     }
 
     private async Task InstallClientAsync()
     {
         var cfg = ReadConfig();
-        if (cfg is null || !Uri.TryCreate(cfg.ClientZipUrl, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps)
-        { MessageBox.Show(this, "Укажи публичную HTTPS-ссылку на ZIP в launcher.json.", "LEDERG", MessageBoxButtons.OK, MessageBoxIcon.Warning); return; }
+        if (!Uri.TryCreate(cfg.ClientZipUrl, UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps || uri.Host != "drive.usercontent.google.com")
+        { MessageBox.Show(this, "Встроенная ссылка на клиент недействительна.", "LEDERG", MessageBoxButtons.OK, MessageBoxIcon.Error); return; }
         install.Enabled = play.Enabled = false;
         var temp = Path.Combine(Path.GetTempPath(), "LEDERG-STALMINE-CLIENT.zip");
         try
