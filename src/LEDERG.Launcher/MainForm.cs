@@ -178,6 +178,9 @@ public sealed class MainForm : Form
         play.Enabled = false;
         try
         {
+            status.Text = "Проверка библиотек Forge 1.12.2…";
+            await MinecraftLibraryInstaller.EnsureLibrariesAsync(folder.Text, http,
+                new Progress<string>(message => status.Text = message));
             status.Text = "Подготовка Forge 1.12.2…";
             var plan = MinecraftLaunchBuilder.Build(folder.Text, username.Text.Trim(), 3072);
             var logDirectory = Path.Combine(plan.WorkingDirectory, "logs");
