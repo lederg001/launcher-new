@@ -150,7 +150,7 @@ public static class MinecraftLibraryInstaller
 
             File.Move(temporaryPath, artifact.TargetPath, overwrite: true);
         }
-        catch (Exception exception) when (exception is not OperationCanceledException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not InvalidDataException)
         {
             throw new InvalidOperationException(
                 $"Не удалось восстановить библиотеку {artifact.Name} из официального репозитория ({uri.Host}). {exception.Message}",
