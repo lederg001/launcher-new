@@ -53,7 +53,7 @@ public class MinecraftLaunchBuilderTests
             Assert.Contains("--tweakClass", args);
             Assert.Contains("net.minecraftforge.fml.common.launcher.FMLTweaker", args);
 
-            var classPath = args[args.IndexOf("-cp") + 1];
+            var classPath = args[Array.IndexOf(args.ToArray(), "-cp") + 1];
             Assert.Contains(Path.Combine("libraries", "net", "minecraftforge", "forge", "forge.jar"), classPath);
             Assert.Contains(Path.Combine("libraries", "example", "windows.jar"), classPath);
             Assert.DoesNotContain(Path.Combine("libraries", "example", "linux.jar"), classPath);
