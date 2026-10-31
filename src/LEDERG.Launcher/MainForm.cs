@@ -20,7 +20,7 @@ public sealed class MainForm : Form
     // Embedded client distribution URL: the EXE works without an adjacent config file.
     private static readonly LauncherConfig BuiltInConfig = new(
         "https://drive.usercontent.google.com/download?id=10YtvjYpbQ2ak5w4-FbuhpvaMgus0gJsb&export=download&confirm=t",
-        "832ca9a917dfdf86e90b2847163a803af4144c8a7f407f8b64081f59c266f5b6",
+        "3537bd0e017b40c7418ad54688dc95e064392b15982a5dd784e84ff0b4ea359c",
         ".minecraft");
 
     public MainForm()
